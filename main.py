@@ -1,14 +1,13 @@
+import os
+import json
+import gspread
+from google.oauth2.service_account import Credentials
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-import gspread
-from google.oauth2.service_account import Credentials
-import os
-import json
 
-app = FastAPI(title="API Planilha Entregas")
+app = FastAPI()
 
-# Configuração de CORS para permitir que o app acesse a API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,29 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Definindo o modelo de dados esperado do React Native
-class RotaPayload(BaseModel):
-    data: str
-    modalidade: str
-    regiao: str
-    hub: str
-    odometro_inicial: float
-    odometro_final: float
-    valor_base: float
-    bonus: float
-    outros_custos: float
-    horario_inicio: str
-    horario_fim: str
-
 def get_sheet():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     
-    # Se estiver rodando na nuvem (Render) com a variável configurada:
-    if "GOOGLE_CREDENTIALS" in os.environ:
-        creds_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
+    # Tenta ler das variáveis de ambiente (Vercel)
+    creds_env = os.environ.get("GOOGLE_CREDENTIALS")
+    if creds_env:
+        creds_info = json.loads(creds_env)
         credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
     else:
-        # Se estiver rodando localmente no seu PC:
+        # Fallback para o arquivo local
         credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
         
     cliente = gspread.authorize(credentials)

@@ -32,20 +32,19 @@ class RotaPayload(BaseModel):
     horario_fim: str
 
 def get_sheet():
-    # O ideal em produção (como na Vercel) é colocar o conteúdo do JSON em uma variável de ambiente.
-    # Para teste local, usaremos o arquivo 'credentials.json'
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     
-    # Exemplo para carregar de variável de ambiente na Vercel:
-    # creds_info = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
-    # credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
-    
-    credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+    # Se estiver rodando na nuvem (Render) com a variável configurada:
+    if "GOOGLE_CREDENTIALS" in os.environ:
+        creds_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
+        credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
+    else:
+        # Se estiver rodando localmente no seu PC:
+        credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
+        
     cliente = gspread.authorize(credentials)
-    
-    # ID da planilha que criei para você: 1VhECNg8QAWzTSYRiE3BRCyxl49x2k4GD8pOFTQP-2Cg
     sheet = cliente.open_by_key("1VhECNg8QAWzTSYRiE3BRCyxl49x2k4GD8pOFTQP-2Cg")
-    return sheet.worksheet("Rotas") # Aba 1
+    return sheet.worksheet("Rotas")
 
 @app.post("/adicionar-rota")
 async def adicionar_rota(rota: RotaPayload):

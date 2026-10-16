@@ -1,6 +1,7 @@
 import os
 import json
 import gspread
+from typing import Optional
 from google.oauth2.service_account import Credentials
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# Configuração de CORS para permitir requisições do App React Native
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,16 +18,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Modelo de dados enviado pelo aplicativo
+class RotaPayload(BaseModel):
+    data: str
+    hub: str
+    modalidade: str
+    regiao: str
+    odometro_inicial: float
+    odometro_final: float
+    valor_base: float
+    bonus: Optional[float] = 0.0
+    outros_custos: Optional[float] = 0.0
+    horario_inicio: str
+    horario_fim: str
+
+# Rota raiz para teste de status pelo navegador
+@app.get("/")
+def read_root():
+    return {"status": "API de Entregas ativa e online!"}
+
 def get_sheet():
-    scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
     
-    # Tenta ler das variáveis de ambiente (Vercel)
+    # Tenta ler das variáveis de ambiente na Vercel
     creds_env = os.environ.get("GOOGLE_CREDENTIALS")
     if creds_env:
-        creds_info = json.loads(creds_env)
-        credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
+        try:
+            creds_info = json.loads(creds_env)
+            credentials = Credentials.from_service_account_info(creds_info, scopes=scopes)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Erro ao processar GOOGLE_CREDENTIALS na Vercel: {str(e)}"
+            )
     else:
-        # Fallback para o arquivo local
+        # Fallback para execução local no computador
+        if not os.path.exists("credentials.json"):
+            raise HTTPException(
+                status_code=500, 
+                detail="credentials.json não encontrado localmente nem a variável GOOGLE_CREDENTIALS na Vercel."
+            )
         credentials = Credentials.from_service_account_file("credentials.json", scopes=scopes)
         
     cliente = gspread.authorize(credentials)
@@ -37,10 +72,9 @@ async def adicionar_rota(rota: RotaPayload):
     try:
         sheet = get_sheet()
         
-        # O gspread apenas insere os valores brutos. As fórmulas das colunas K até S do Sheets farão o resto automaticamente!
         nova_linha = [
             rota.data,                 # A: Data
-            "",                        # B: Dia da Semana (Deixe vazio ou repita a fórmula no Sheets depois)
+            "",                        # B: Dia da Semana (fórmula no Sheets)
             rota.hub,                  # C: HUB
             rota.modalidade,           # D: Modalidade
             rota.regiao,               # E: Região de Entrega
@@ -49,7 +83,7 @@ async def adicionar_rota(rota: RotaPayload):
             rota.valor_base,           # H: Valor Base
             rota.bonus,                # I: Bônus
             rota.outros_custos,        # J: Outros Custos
-            "",                        # K: KM Total (Fórmula)
+            "",                        # K: KM Total (fórmula no Sheets)
             rota.horario_inicio,       # L: Horário Início
             rota.horario_fim           # M: Horário Fim
         ]
@@ -59,5 +93,3 @@ async def adicionar_rota(rota: RotaPayload):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao salvar na planilha: {str(e)}")
-
-# Comando para rodar localmente: uvicorn main:app --reload

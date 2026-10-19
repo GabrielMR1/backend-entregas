@@ -25,6 +25,7 @@ export default function HomeScreen() {
   const [outrosCustos, setOutrosCustos] = useState('');
   const [horarioInicio, setHorarioInicio] = useState('');
   const [horarioFim, setHorarioFim] = useState('');
+  const [qtdPacotes, setQtdPacotes] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -47,6 +48,7 @@ export default function HomeScreen() {
       outros_custos: parseFloat(outrosCustos.replace(',', '.')) || 0,
       horario_inicio: horarioInicio || "08:00",
       horario_fim: horarioFim || "18:00",
+      qtd_pacotes: parseInt(qtdPacotes) || 0,
     };
 
     try {
@@ -62,7 +64,6 @@ export default function HomeScreen() {
 
       if (response.ok) {
         Alert.alert("Sucesso! 🎉", "Rota salva na planilha com sucesso!");
-        // Limpar campos
         setHub('');
         setModalidade('');
         setRegiao('');
@@ -73,6 +74,7 @@ export default function HomeScreen() {
         setOutrosCustos('');
         setHorarioInicio('');
         setHorarioFim('');
+        setQtdPacotes('');
       } else {
         Alert.alert("Erro", result.detail || "Falha ao salvar rota.");
       }
@@ -97,7 +99,7 @@ export default function HomeScreen() {
           <TextInput style={styles.input} value={hub} onChangeText={setHub} placeholder="Ex: Shopee / Mercado Livre" />
 
           <Text style={styles.label}>Modalidade</Text>
-          <TextInput style={styles.input} value={modalidade} onChangeText={setModalidade} placeholder="Ex: Utililitário / Carro" />
+          <TextInput style={styles.input} value={modalidade} onChangeText={setModalidade} placeholder="Ex: Utilitário / Carro" />
 
           <Text style={styles.label}>Região</Text>
           <TextInput style={styles.input} value={regiao} onChangeText={setRegiao} placeholder="Ex: Ceilândia / Taguatinga" />
@@ -137,6 +139,9 @@ export default function HomeScreen() {
               <TextInput style={styles.input} value={horarioFim} onChangeText={setHorarioFim} placeholder="17:00" />
             </View>
           </View>
+
+          <Text style={styles.label}>Qtd. de Pacotes</Text>
+          <TextInput style={styles.input} value={qtdPacotes} onChangeText={setQtdPacotes} keyboardType="numeric" placeholder="Ex: 45" />
 
           <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
             {loading ? (

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "9ae26786-6b6e-4055-a729-76a567f7637f"
+      }
+    },
+    "android": {
+      "package": "com.gabrielmn12.appentregas"
+    }
+  }
+}

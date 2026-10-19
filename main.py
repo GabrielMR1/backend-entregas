@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Configuração de CORS para permitir requisições do App React Native
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelo de dados enviado pelo aplicativo
 class RotaPayload(BaseModel):
     data: str
     hub: str
@@ -31,8 +29,8 @@ class RotaPayload(BaseModel):
     outros_custos: Optional[float] = 0.0
     horario_inicio: str
     horario_fim: str
+    qtd_pacotes: Optional[int] = 0
 
-# Rota raiz para teste de status pelo navegador
 @app.get("/")
 def read_root():
     return {"status": "API de Entregas ativa e online!"}
@@ -43,7 +41,6 @@ def get_sheet():
         "https://www.googleapis.com/auth/drive"
     ]
     
-    # Tenta ler das variáveis de ambiente na Vercel
     creds_env = os.environ.get("GOOGLE_CREDENTIALS")
     if creds_env:
         try:
@@ -55,7 +52,6 @@ def get_sheet():
                 detail=f"Erro ao processar GOOGLE_CREDENTIALS na Vercel: {str(e)}"
             )
     else:
-        # Fallback para execução local no computador
         if not os.path.exists("credentials.json"):
             raise HTTPException(
                 status_code=500, 
@@ -74,7 +70,7 @@ async def adicionar_rota(rota: RotaPayload):
         
         nova_linha = [
             rota.data,                 # A: Data
-            "",                        # B: Dia da Semana (fórmula no Sheets)
+            "",                        # B: Dia da Semana (Fórmula no Sheets)
             rota.hub,                  # C: HUB
             rota.modalidade,           # D: Modalidade
             rota.regiao,               # E: Região de Entrega
@@ -83,9 +79,11 @@ async def adicionar_rota(rota: RotaPayload):
             rota.valor_base,           # H: Valor Base
             rota.bonus,                # I: Bônus
             rota.outros_custos,        # J: Outros Custos
-            "",                        # K: KM Total (fórmula no Sheets)
+            "",                        # K: KM Total (Fórmula no Sheets)
             rota.horario_inicio,       # L: Horário Início
-            rota.horario_fim           # M: Horário Fim
+            rota.horario_fim,          # M: Horário Fim
+            rota.qtd_pacotes,          # N: Quantidade de Pacotes
+            ""                         # O: Tempo Médio por Pacote (Fórmula no Sheets)
         ]
         
         sheet.append_row(nova_linha, value_input_option="USER_ENTERED")
